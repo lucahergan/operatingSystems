@@ -62,15 +62,24 @@ syscall create(void *funcaddr, ulong ssize, char *name, ulong nargs, ...)
         *--saddr = 0;
     }
     // TODO: Initialize process context.
-    for (i = 0; i < CONTEXT; i++) {
-        *--saddr = 0; //clear content for our new process
-    }
+    
+    for (i = 0; i < CONTEXT; i++)
+	    ppcb->ctx[i] = 0;
+    ppcb->ctx[CTX_RA] = 0;
+    ppcb->ctx[CTX_SP] = (ulong)saddr;
+    ppcb->ctx[CTX_PC] = (ulong)funcaddr;
+
     // TODO:  Place arguments into context and/or activation record.
     //        See K&R 7.3 for example using va_start, va_arg and
     //        va_end macros for variable argument functions.
+    
     va_start(ap, nargs);
-    for (i = 0; i < nargs; i++)
-        ppcb->ctx[i] = va_arg(ap, int);
+    for (i = 0; i < nargs; i++) {
+        if (i < ARG_REG_MAX)
+            ppcb->ctx[i] = va_arg(ap, ulong);
+	else
+            saddr[i - ARG_REG_MAX] = va_arg(ap, ulong);
+    }
     va_end(ap);
 
     return pid;
