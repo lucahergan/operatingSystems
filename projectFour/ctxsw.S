@@ -30,41 +30,42 @@ ctxsw:
 
 // TODO: Save process state, including at least the 
 //	callee-save ("non-volatile") registers.
-	sd s0, CTX_S0(a0)
-	sd s1, CTX_S1(a0)
-	sd s2, CTX_S2(a0)
-	sd s3, CTX_S3(a0)
-	sd s4, CTX_S4(a0)
-	sd s5, CTX_S5(a0) //store s5 content into newcontext[CTX_S5]
-	sd s6, CTX_S6(a0)
-	sd s7, CTX_S7(a0)
-	sd s8, CTX_S8(a0)
-	sd s9, CTX_S9(a0)
-	sd s10, CTX_S10(a0)
-	sd s11, CTX_S11(a0)
-	sd ra, CTX_RA(a0)
-	sd sp, CTX_SP(a0)
+	sd s0, 4*CTX_S0(a0)
+	sd s1, 4*CTX_S1(a0)
+	sd s2, 4*CTX_S2(a0)
+	sd s3, 4*CTX_S3(a0)
+	sd s4, 4*CTX_S4(a0)
+	sd s5, 4*CTX_S5(a0)
+	sd s6, 4*CTX_S6(a0)
+	sd s7, 4*CTX_S7(a0)
+	sd s8, 4*CTX_S8(a0)
+	sd s9, 4*CTX_S9(a0)
+	sd s10, 4*CTX_S10(a0)
+	sd s11, 4*CTX_S11(a0)
+	sd ra, 4*CTX_RA(a0)
+	sd sp, 4*CTX_SP(a0)
 // TODO: Switch from old process stack to new process stack.
-	ld sp, CTX_SP(a1) //set stack pointer right now to oldcontext[CTX_SP] ?
+	ld sp, 4*CTX_SP(a1)
 // TODO: Restore process state, including at least the
 //	callee-save ("non-volatile") registers.
 //	These call and restore segments must match the register data
 //	layout you choose in create().
-	ld s0, CTX_S0(a1)
-	ld s1, CTX_S1(a1)
-	ld s2, CTX_S2(a1)
-	ld s3, CTX_S3(a1)
-	ld s4, CTX_S4(a1)
-	ld s5, CTX_S5(a1)
-	ld s6, CTX_S6(a1)
-	ld s7, CTX_S7(a1)
-	ld s8, CTX_S8(a1)
-	ld s9, CTX_S9(a1)
-	ld s10, CTX_S10(a1)
-	ld s11, CTX_S11(a1)
-	ld ra, CTX_RA(a1)
+	ld s0, 4*CTX_S0(a1)
+	ld s1, 4*CTX_S1(a1)
+	ld s2, 4*CTX_S2(a1)
+	ld s3, 4*CTX_S3(a1)
+	ld s4, 4*CTX_S4(a1)
+	ld s5, 4*CTX_S5(a1)
+	ld s6, 4*CTX_S6(a1)
+	ld s7, 4*CTX_S7(a1)
+	ld s8, 4*CTX_S8(a1)
+	ld s9, 4*CTX_S9(a1)
+	ld s10, 4*CTX_S10(a1)
+	ld s11, 4*CTX_S11(a1)
+	ld ra, 4*CTX_RA(a1)
 // TODO: Jump to next function.
-	jalr CTX_PC(a1)
+	//jalr ra, 4*CTX_PC(a1)
+	//jalr 4*CTX_RA(a0), 
 //	Note: there are two important values at play here --
 //	the address of the process's function that we want to end up in
 //	once we leave this ctxsw(), and the value we want to have in the

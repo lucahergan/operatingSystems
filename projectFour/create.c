@@ -1,3 +1,16 @@
+/**
+ * @file create.c
+ * @provides create, newpid, userret
+ *
+ * COSC 3250 Assignment 4
+ * @author David Mathu
+ * @author Luca Hergan
+ * Instructor Dr. Brylow
+ * TA-BOT:MAILTO david.mathu@marquette.edu
+ * TA-BOT:MAILTO luca.hergan@marquette.edu
+ */
+/* Embedded XINU, Copyright (C) 2008.  All rights reserved. */
+
 #include <xinu.h>
 
 static pid_typ newpid(void);
@@ -42,7 +55,7 @@ syscall create(void *funcaddr, ulong ssize, char *name, ulong nargs, ...)
     ppcb->stkbase = saddr;
     strncpy(ppcb->name, name, PNMLEN);
     ppcb->stklen = ssize;
-    kprintf("Setup PCB for %s (stack base 0x%p, stack length %d)\n", ppcb->name, ppcb->stkbase, ppcb->stklen);
+    kprintf("Setup PCB for %s (stack base 0x%p, stack length %d)\r\n", ppcb->name, ppcb->stkbase, ppcb->stklen);
 
     /* Initialize stack with accounting block. */
     *saddr = STACKMAGIC;
