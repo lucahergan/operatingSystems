@@ -27,7 +27,6 @@
  */
 	.func ctxsw
 ctxsw:
-
 // TODO: Save process state, including at least the 
 //	callee-save ("non-volatile") registers.
 	sd s0, 4*CTX_S0(a0)
@@ -43,9 +42,10 @@ ctxsw:
 	sd s10, 4*CTX_S10(a0)
 	sd s11, 4*CTX_S11(a0)
 	sd ra, 4*CTX_RA(a0)
+	sd ra, 4*CTX_PC(a0)
 	sd sp, 4*CTX_SP(a0)
 // TODO: Switch from old process stack to new process stack.
-	ld sp, 4*CTX_SP(a1)
+	//ld sp, 4*CTX_SP(a1)
 // TODO: Restore process state, including at least the
 //	callee-save ("non-volatile") registers.
 //	These call and restore segments must match the register data
@@ -62,10 +62,12 @@ ctxsw:
 	ld s9, 4*CTX_S9(a1)
 	ld s10, 4*CTX_S10(a1)
 	ld s11, 4*CTX_S11(a1)
+	ld sp, 4*CTX_SP(a1)
 	ld ra, 4*CTX_RA(a1)
 // TODO: Jump to next function.
+	jalr 4*CTX_PC(a1)
+	//ld t0, 4*CTX_PC(a1)
 	//jalr ra, 4*CTX_PC(a1)
-	//jalr 4*CTX_RA(a0), 
 //	Note: there are two important values at play here --
 //	the address of the process's function that we want to end up in
 //	once we leave this ctxsw(), and the value we want to have in the

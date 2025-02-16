@@ -44,10 +44,10 @@ void nulluser(void)
     welcome();
 
     /* Call the main program */
-    //xmain();
+    xmain();
 
     /* Call the main program */
-    ready(create((void *) xmain, INITSTK, "MAIN", 2, 0, NULL), 0);
+    //ready(create((void *) xmain, INITSTK, "MAIN", 2, 0, NULL), 0);
 
     /* null process has nothing else to do but cannot exit  */
     while (1)

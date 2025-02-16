@@ -78,9 +78,6 @@ syscall create(void *funcaddr, ulong ssize, char *name, ulong nargs, ...)
     
     for (i = 0; i < CONTEXT; i++)
 	    ppcb->ctx[i] = 0;
-    ppcb->ctx[CTX_RA] = 0;
-    ppcb->ctx[CTX_SP] = (ulong)saddr;
-    ppcb->ctx[CTX_PC] = (ulong)funcaddr;
 
     // TODO:  Place arguments into context and/or activation record.
     //        See K&R 7.3 for example using va_start, va_arg and
@@ -93,6 +90,12 @@ syscall create(void *funcaddr, ulong ssize, char *name, ulong nargs, ...)
 	else
             saddr[i - ARG_REG_MAX] = va_arg(ap, ulong);
     }
+
+    ppcb->ctx[CTX_RA] = (ulong)userret;
+    ppcb->ctx[CTX_SP] = (ulong)saddr;
+    ppcb->ctx[CTX_PC] = (ulong)funcaddr;
+	kprintf("PCB's pc points to %d\r\n", ppcb->ctx[CTX_PC]);
+
     va_end(ap);
 
     return pid;
