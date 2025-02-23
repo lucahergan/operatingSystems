@@ -24,6 +24,21 @@ void dispatch(ulong cause, ulong val, ulong *frame, ulong *program_counter) {
         cause = cause << 1;
         cause = cause >> 1;
 
+	int system_call_number = frame[CTX_A7];
+	//kprintf("calling dispatch\n");
+
+	//argument 7 from the frame holds what the system call was
+	//put return value of system call in frame[a0]
+	//you'll need to add exactly 4 to pointer, when u use set_sepc
+
+	if (val != E_ENVCALL_FROM_UMODE) {
+		xtrap(frame, cause, (ulong)frame, program_counter); //what is the "address" here the same as frame?
+	} else {
+		int result = syscall_dispatch(system_call_number, frame);
+		frame[0] = result;
+		set_sepc((ulong)program_counter + 4);
+	}
+
        /**
 	* TODO:
 	* Check to ensure the trap is an environment call from U-Mode
