@@ -29,7 +29,7 @@ void dispatch(ulong cause, ulong val, ulong *frame, ulong *program_counter) {
         cause = cause >> 1;
 	
 		if (cause != E_ENVCALL_FROM_UMODE) {
-			xtrap((ulong*)frame, cause, 0, (ulong*)program_counter);
+			xtrap((ulong*)frame, cause, val, (ulong*)program_counter);
 		}
 		else {
 			//frame[CTX_A7] is the system call from register A7
