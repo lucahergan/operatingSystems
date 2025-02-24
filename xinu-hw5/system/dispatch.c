@@ -16,6 +16,10 @@
  * @param frame  The stack pointer of the process that caused the interupt 
  * @param program_counter  The value of the sepc register 
  */
+ //Cause is the cause of the exception (register scause)
+ //find a7 to find sys call
+ //change return value in a0
+ //program counter is pointer to code
 
 void dispatch(ulong cause, ulong val, ulong *frame, ulong *program_counter) {
     ulong swi_opcode;
@@ -23,22 +27,20 @@ void dispatch(ulong cause, ulong val, ulong *frame, ulong *program_counter) {
     if((long)cause > 0) {
         cause = cause << 1;
         cause = cause >> 1;
+	
+		if (cause != E_ENVCALL_FROM_UMODE) {
+			xtrap((ulong*)frame, cause, 0, (ulong*)program_counter);
+		}
+		else {
+			//frame[CTX_A7] is the system call from register A7
+			ulong ret_val = syscall_dispatch(frame[CTX_A7], (ulong*)frame);
 
-	int system_call_number = frame[CTX_A7];
-	//kprintf("calling dispatch\n");
+			//Change A0 to return value based on what was received from syscall_dispatch
+			frame[CTX_A0] = ret_val;
 
-	//argument 7 from the frame holds what the system call was
-	//put return value of system call in frame[a0]
-	//you'll need to add exactly 4 to pointer, when u use set_sepc
-
-	if (val != E_ENVCALL_FROM_UMODE) {
-		xtrap(frame, cause, (ulong)frame, program_counter); //what is the "address" here the same as frame?
-	} else {
-		int result = syscall_dispatch(system_call_number, frame);
-		frame[0] = result;
-		set_sepc((ulong)program_counter + 4);
-	}
-
+			//Move program counter
+			set_sepc((ulong)program_counter + 4);
+		}
        /**
 	* TODO:
 	* Check to ensure the trap is an environment call from U-Mode
