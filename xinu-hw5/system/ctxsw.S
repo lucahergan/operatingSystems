@@ -85,6 +85,18 @@ ctxsw:
 	ld t2, CTX_PC*8(t1) //t2 holds new PC
 	ld ra, CTX_RA*8(t1)
 	//jalr zero, t2, 0
+	//mv ra, t2
+
+	mv t0, t2
+	beq t0, ra, switch
+	li t4, SSTATUS_S_MODE
+	csrc sstatus, t4
+	csrw sepc, t0
+
+	sret
+		switch:
+	ret
+
 //	Note: there are two important values at play here --
 //	the address of the process's function that we want to end up in
 //	once we leave this ctxsw(), and the value we want to have in the
@@ -102,14 +114,5 @@ ctxsw:
 // Note: the following code is for the next assignment.  DO NOT uncomment it
 //      until you believe your trap handler is working.
 // Determine which privilege mode the process should be in
-	ld t0, CTX_PC*8(t1)
-	beq t0, ra, switch
-	li t4, SSTATUS_S_MODE
-	csrc sstatus, t4
-	csrw sepc, t0
-
-	sret
-switch:
-	ret
 
 	.end ctxsw
