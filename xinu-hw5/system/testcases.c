@@ -2,14 +2,39 @@
  * @file testcases.c
  * @provides testcases
  *
- * TA-BOT:MAILTO
- *
+ * COSC 3250 - Project 5
+ * Defines user_printf, which makes calls to user_putc, and
+ * adds test case 4 to use user_printf.
+ * @author David Mathu
+ * @author Luca Hergan
+ * TA-BOT:MAILTO david.mathu@marquette.edu
+ * TA-BOT:MAILTO luca.hergan@marquette.edu
  */
 /* Embedded XINU, Copyright (C) 2007.  All rights reserved. */
 
 #include <xinu.h>
 
 extern void main(int, char *);
+
+/**
+ * syscall for user_printf
+ * Modeled after kprintf in system/kprintf.c
+ * Uses calls to user_putc
+ * Included in testcases.c because "only changes to dispatch.c and
+ * testcases.c will be graded for this assignment"
+ */
+syscall user_printf(int descrp, char* format, ...)
+{
+	int retval;
+	va_list ap;
+	va_start(ap, format);
+	retval = _doprnt(format, ap, (int (*)(long, long))user_putc, descrp); //works when using kputc directly instead of user_putc (?)
+	va_end(ap);
+	return retval;
+	
+	/* while (*format) user_putc(descrp, *format++);
+	return 0; */ //primitive implementation without substitution into format string - works (?)
+}
 
 int test_usernone(void) {
 	kprintf("This is a test of ...");
@@ -62,6 +87,12 @@ int testmain(int argc, char **argv)
         user_yield();
     }
     return 0;
+}
+
+int test_userprintf(void) {
+	user_printf(0, "This is a big long string\r\n");
+	user_printf(0, "With formatting: %c %d 0x%08X\r\n", 100, 100, 100);
+	return 0;
 }
 
 void testbigargs(int a, int b, int c, int d, int e, int f, int g, int h)
@@ -122,6 +153,7 @@ void testcases(void)
     kprintf("1) Test user_getc syscall\r\n");
     kprintf("2) Test user_putc syscall\r\n");
     kprintf("3) Create three processes that test user_yield syscall\r\n");
+    kprintf("4) Test user_printf syscall\r\n");
 
     kprintf("===TEST BEGIN===\r\n");
 
@@ -156,6 +188,11 @@ void testcases(void)
         while (numproc > 1)
             resched();
         break;
+
+    case '4':
+	ready(create((void *)test_userprintf, INITSTK, "test_userprintf", 0),
+	    RESCHED_YES);
+	break;
 
     default:
         break;
