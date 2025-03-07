@@ -11,27 +11,31 @@
 /**
  * Selects a random process, according to the number of tickets
  * it has.
- * @return pointer to selected PCB
+ * @return integer pid
  */
-pcb* select_random_process() {
-    pcb *newproc;
+int select_random_process() {
+    int chosen_pid = 0; //default to nullproc; don't count nullproc for tickets. if no tickets, return nullproc
 	//walk through process table
 	int i;
 	uint total_tickets = 0;
-	for (i = 0; i < NPROC; i++) {
+	for (i = 1; i < NPROC; i++) {
 		if (proctab[i].state != PRFREE)
 			total_tickets += proctab[i].tickets;
 	}
 	//pick one
 	uint winner_ticket = rand() % total_tickets;
 	uint counter = 0;
-	for (i = 0; i < NPROC; i++) {
+	for (i = 1; i < NPROC; i++) {
 		if (proctab[i].state != PRFREE) {
 			counter += proctab[i].tickets;
-			if (counter > winner_ticket) newproc = &proctab[i];
+			if (counter > winner_ticket) {
+				chosen_pid = i;
+				break;
+			}
 		}
 	}
-	return newproc;
+	//if (chosen_pid == 0) return SYSERR;
+	return chosen_pid;
 }
 
 extern void ctxsw(void *, void *);
@@ -53,7 +57,7 @@ syscall resched(void)
     if (PRCURR == oldproc->state)
     {
         oldproc->state = PRREADY;
-        enqueue(currpid, readylist);
+        //enqueue(currpid, readylist);
     }
 
     /**
@@ -65,7 +69,8 @@ syscall resched(void)
      * random ticket value.  Remove process from queue.
      * Set currpid to the new process.
      */
-    currpid = dequeue(readylist);
+    //currpid = dequeue(readylist);
+	currpid = select_random_process();
     newproc = &proctab[currpid];
     newproc->state = PRCURR;    /* mark it currently running    */
 
@@ -73,6 +78,7 @@ syscall resched(void)
     preempt = QUANTUM;
 #endif
 
+	kprintf("[%d %d]", oldproc-proctab, newproc-proctab);
     ctxsw(&oldproc->ctx, &newproc->ctx);
 
     /* The OLD process returns here when resumed. */
