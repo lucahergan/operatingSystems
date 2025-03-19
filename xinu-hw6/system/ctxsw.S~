@@ -3,6 +3,13 @@
  * @provides ctxsw
  *
  * COSC 3250 / COEN 4820 Assignment 4
+ * Defines the ctxsw function, which context-switches from
+ * one process to another using the two processes' context arrays.
+ * @author David Mathu
+ * @author Luca Hergan
+ * Instructor Dr. Brylow
+ * TA-BOT:MAILTO david.mathu@marquette.edu
+ * TA-BOT:MAILTO luca.hergan@marquette.edu
  */
 /* Embedded XINU, Copyright (C) 2025.  All rights reserved. */
 
@@ -44,6 +51,7 @@ ctxsw:
 	sd s9, 8*CTX_S9(t0)
 	sd s10, 8*CTX_S10(t0)
 	sd s11, 8*CTX_S11(t0)
+	sd ra, 8*CTX_PC(t0)
 	sd ra, 8*CTX_RA(t0)
 	sd sp, 8*CTX_SP(t0)
 // TODO: Switch from old process stack to new process stack.
@@ -76,7 +84,19 @@ ctxsw:
 	ld sp, CTX_SP*8(t1)
 	ld t2, CTX_PC*8(t1) //t2 holds new PC
 	ld ra, CTX_RA*8(t1)
-	jalr pc, t2, CTX_PC*8 
+	//jalr zero, t2, 0
+	//mv ra, t2
+
+	mv t0, t2
+	beq t0, ra, switch
+	li t4, SSTATUS_S_MODE
+	csrc sstatus, t4
+	csrw sepc, t0
+
+	sret
+		switch:
+	ret
+
 //	Note: there are two important values at play here --
 //	the address of the process's function that we want to end up in
 //	once we leave this ctxsw(), and the value we want to have in the
@@ -94,14 +114,5 @@ ctxsw:
 // Note: the following code is for the next assignment.  DO NOT uncomment it
 //      until you believe your trap handler is working.
 // Determine which privilege mode the process should be in
-//	ld t0, (**REGISTER THAT HOLDS NEW CONTEXT PROGRAM COUNTER**)
-//	beq t0, ra, switch
-//	li t4, SSTATUS_S_MODE
-//	csrc sstatus, t4
-//	csrw sepc, t0
-//
-//	sret
-//switch:
-//	ret
 
 	.end ctxsw

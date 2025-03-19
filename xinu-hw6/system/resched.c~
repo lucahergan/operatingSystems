@@ -84,7 +84,7 @@ syscall resched(void)
     preempt = QUANTUM;
 #endif
 
-    //kprintf("[%d %d]", oldproc-proctab, newproc-proctab); //print former pid and current pid
+	kprintf("[%d %d]", oldproc-proctab, newproc-proctab); //print former pid and current pid
     ctxsw(&oldproc->ctx, &newproc->ctx);
 
     /* The OLD process returns here when resumed. */

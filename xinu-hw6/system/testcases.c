@@ -2,8 +2,8 @@
  * @file testcases.c
  * @provides testcases
  *
- * COSC 3250 - Project 5
- * Adds test case 4 to use user_printf, defined in syscall_dispatch.c.
+ * COSC 3250 - Project 6
+ * Adds additional test cases for Project 6 to test the rescheduler.
  * @author David Mathu
  * @author Luca Hergan
  * TA-BOT:MAILTO david.mathu@marquette.edu
@@ -87,6 +87,39 @@ void testbigargs(int a, int b, int c, int d, int e, int f, int g, int h)
     kprintf("h = 0x%08X\r\n", h);
 }
 
+
+
+
+void process_that_takes_a_long_time() {
+  int i;
+  for (i = 0; i < 10; i++) {
+    kprintf("process that takes a long time (%d/10) (process %d)\r\n", i+1, currpid);
+    user_yield();
+  }
+}
+void process_that_is_fast() {
+  kprintf("process that is fast (process %d)\r\n", currpid);
+}
+
+
+void goliath_process() {
+  kprintf("Goliath process starts\r\n");
+  while (1);
+}
+void david_process() {
+  kprintf("David process got to run\r\n");
+}
+
+
+void test_current_tickets() {
+  kprintf("Process %d has %d tickets\r\n", currpid, proctab[currpid].tickets);
+}
+
+
+
+
+
+
 void printpcb(int pid)
 {
     pcb *ppcb = NULL;
@@ -128,11 +161,17 @@ void testcases(void)
 {
     int c;
 
+    kprintf("- Test cases from project 5 -\r\n");
     kprintf("0) Test user_none syscall\r\n");
     kprintf("1) Test user_getc syscall\r\n");
     kprintf("2) Test user_putc syscall\r\n");
     kprintf("3) Create three processes that test user_yield syscall\r\n");
     kprintf("4) Test user_printf syscall\r\n");
+
+    kprintf("- Test cases for project 6 -\r\n");
+    kprintf("5) High-priority fast processes and one low-priority\r\n   slow process (that yields itself)\r\n");
+    kprintf("6) Make many processes, each just reports how many tickets they have\r\n");
+    kprintf("P) David (fast process, low priority) and Goliath\r\n   (indefinite loop, high priority). Tests for starvation, demonstrates preemptive scheduling\r\n");
 
     kprintf("===TEST BEGIN===\r\n");
 
@@ -172,6 +211,46 @@ void testcases(void)
 	ready(create((void *)test_userprintf, INITSTK, 1, "test_userprintf", 0),
 	    RESCHED_YES);
 	break;
+
+    case '5':
+      ready(create((void*)process_that_takes_a_long_time, INITSTK, 1, "longproc", 0),
+	    RESCHED_NO);
+      ready(create((void*)process_that_is_fast, INITSTK, 100, "longproc", 0),
+	    RESCHED_NO);
+      ready(create((void*)process_that_is_fast, INITSTK, 100, "longproc", 0),
+	    RESCHED_NO);
+      ready(create((void*)process_that_is_fast, INITSTK, 100, "longproc", 0),
+	    RESCHED_NO);
+      ready(create((void*)process_that_is_fast, INITSTK, 100, "longproc", 0),
+	    RESCHED_NO);
+      ready(create((void*)process_that_is_fast, INITSTK, 100, "longproc", 0),
+	    RESCHED_YES);
+      break;
+    case '6':
+      ready(create((void*)test_current_tickets, INITSTK, 1, "ticketcount", 0),
+	    RESCHED_NO);
+      ready(create((void*)test_current_tickets, INITSTK, 2, "ticketcount", 0),
+	    RESCHED_NO);
+      ready(create((void*)test_current_tickets, INITSTK, 3, "ticketcount", 0),
+	    RESCHED_NO);
+      ready(create((void*)test_current_tickets, INITSTK, 4, "ticketcount", 0),
+	    RESCHED_NO);
+      ready(create((void*)test_current_tickets, INITSTK, 5, "ticketcount", 0),
+	    RESCHED_NO);
+      ready(create((void*)test_current_tickets, INITSTK, 6, "ticketcount", 0),
+	    RESCHED_NO);
+      ready(create((void*)test_current_tickets, INITSTK, 7, "ticketcount", 0),
+	    RESCHED_NO);
+      ready(create((void*)test_current_tickets, INITSTK, 1000, "ticketcount", 0),
+	    RESCHED_YES);
+      break;
+    case 'P':
+      ready(create((void*)david_process, INITSTK, 1, "david", 0),
+	    RESCHED_NO);
+      ready(create((void*)goliath_process, INITSTK, 100, "goliath", 0),
+	    RESCHED_YES);
+      break;
+      
 
     default:
         break;

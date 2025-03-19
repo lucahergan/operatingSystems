@@ -37,7 +37,7 @@ ctxsw:
 // TODO: Save process state, including at least the 
 //	callee-save ("non-volatile") registers.
 	mv t0, a0 //old context is in t0
-	mv t1, a1 //new context is in t1
+	mv t2, a1 //new context is in t1
 
 	sd s0, 8*CTX_S0(t0)
 	sd s1, 8*CTX_S1(t0)
@@ -60,34 +60,34 @@ ctxsw:
 //	callee-save ("non-volatile") registers.
 //	These call and restore segments must match the register data
 //	layout you choose in create().
-	ld s0, 8*CTX_S0(t1)
-	ld s1, 8*CTX_S1(t1)
-	ld s2, 8*CTX_S2(t1)
-	ld s3, 8*CTX_S3(t1)
-	ld s4, 8*CTX_S4(t1)
-	ld s5, 8*CTX_S5(t1)
-	ld s6, 8*CTX_S6(t1)
-	ld s7, 8*CTX_S7(t1)
-	ld s8, 8*CTX_S8(t1)
-	ld s9, 8*CTX_S9(t1)
-	ld s10, 8*CTX_S10(t1)
-	ld s11, 8*CTX_S11(t1)
-	ld a0, 8*CTX_A0(t1)
-	ld a1, 8*CTX_A1(t1)
-	ld a2, 8*CTX_A2(t1)
-	ld a3, 8*CTX_A3(t1)
-	ld a4, 8*CTX_A4(t1)
-	ld a5, 8*CTX_A5(t1)
-	ld a6, 8*CTX_A6(t1)
-	ld a7, 8*CTX_A7(t1)
+	ld s0, 8*CTX_S0(t2)
+	ld s1, 8*CTX_S1(t2)
+	ld s2, 8*CTX_S2(t2)
+	ld s3, 8*CTX_S3(t2)
+	ld s4, 8*CTX_S4(t2)
+	ld s5, 8*CTX_S5(t2)
+	ld s6, 8*CTX_S6(t2)
+	ld s7, 8*CTX_S7(t2)
+	ld s8, 8*CTX_S8(t2)
+	ld s9, 8*CTX_S9(t2)
+	ld s10, 8*CTX_S10(t2)
+	ld s11, 8*CTX_S11(t2)
+	ld a0, 8*CTX_A0(t2)
+	ld a1, 8*CTX_A1(t2)
+	ld a2, 8*CTX_A2(t2)
+	ld a3, 8*CTX_A3(t2)
+	ld a4, 8*CTX_A4(t2)
+	ld a5, 8*CTX_A5(t2)
+	ld a6, 8*CTX_A6(t2)
+	ld a7, 8*CTX_A7(t2)
 // TODO: Jump to next function.
-	ld sp, CTX_SP*8(t1)
-	ld t2, CTX_PC*8(t1) //t2 holds new PC
-	ld ra, CTX_RA*8(t1)
+	ld sp, CTX_SP*8(t2)
+	ld t3, CTX_PC*8(t2) //t3 holds new PC
+	ld ra, CTX_RA*8(t2)
 	//jalr zero, t2, 0
 	//mv ra, t2
 
-	mv t0, t2
+	mv t0, t3
 	beq t0, ra, switch
 	li t4, SSTATUS_S_MODE
 	csrc sstatus, t4
