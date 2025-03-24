@@ -21,7 +21,7 @@
 
 
 /**
- * @fn void ctxsw(&oldcontext, &newcontext)
+ * @fn void ctxsw(&oldcontext, &newcontext, page table parameter)
  *
  * Switch context (values in registers) to another process, saving the
  * current processes information. This function will not return as normally
@@ -37,7 +37,8 @@ ctxsw:
 // TODO: Save process state, including at least the 
 //	callee-save ("non-volatile") registers.
 	mv t0, a0 //old context is in t0
-	mv t2, a1 //new context is in t1
+	mv t2, a1 //new context is in t2
+	mv t1, a2 //page table is in t1
 
 	sd s0, 8*CTX_S0(t0)
 	sd s1, 8*CTX_S1(t0)
@@ -92,6 +93,8 @@ ctxsw:
 	li t4, SSTATUS_S_MODE
 	csrc sstatus, t4
 	csrw sepc, t0
+	csrw satp, t1 //t1 was where a2 was originally saved to
+	sfence.vma zero, zero //WAIT! finish all op codes before we make modifications to memory mapping
 
 	sret
 		switch:

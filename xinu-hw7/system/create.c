@@ -42,7 +42,8 @@ syscall create(void *funcaddr, ulong ssize, uint priority, char *name, ulong nar
 
     ssize = (ulong)((((ulong)(ssize + 3)) >> 2) << 2);
     /* round up to even boundary    */
-    saddr = (ulong *)getstk(ssize);     /* allocate new stack and pid   */
+    saddr = (ulong *)pgalloc();     /* allocate new stack and pid   */
+	saddr = (ulong*) ((ulong)saddr + PAGE_SIZE - sizeof(ulong)); //move saddr from bottom of frame to top of frame
     pid = newpid();
     /* a little error checking      */
     if ((((ulong *)SYSERR) == saddr) || (SYSERR == pid))
@@ -60,10 +61,11 @@ syscall create(void *funcaddr, ulong ssize, uint priority, char *name, ulong nar
     ppcb->stklen = ssize;
 	ppcb->tickets = priority;
 	
-	ppcb->pagetable = vm_userinit(pid, NULL);
+	//"get a physical address to use as the stack", pass it to vm_userinit too
+	ppcb->pagetable = vm_userinit(pid, saddr);
 
     /* Initialize stack with accounting block. */
-    *saddr = STACKMAGIC;
+    *saddr = STACKMAGIC; //actually, this needs to point to the correct place in PHYSICAL memory to line up with the top of the frame
     *--saddr = pid;
     *--saddr = ppcb->stklen;
     *--saddr = (ulong)ppcb->stkbase;
@@ -100,6 +102,9 @@ syscall create(void *funcaddr, ulong ssize, uint priority, char *name, ulong nar
     ppcb->ctx[CTX_RA] = (ulong)userret;
     ppcb->ctx[CTX_SP] = (ulong)saddr;
     ppcb->ctx[CTX_PC] = (ulong)funcaddr;
+	
+	ppcb->swaparea[CTX_KERNSATP] = (ulong) MAKE_SATP(0, _kernpgtbl);
+	ppcb->swaparea[CTX_KERNSP] = (ulong) _kernsp;
 
     return pid;
 }

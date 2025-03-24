@@ -48,6 +48,9 @@ void dispatch(ulong cause, ulong val, ulong *frame, ulong *program_counter) {
 
 			//Move program counter
 			set_sepc((ulong)program_counter + 4);
+			
+			// return MAKE_SATP(currpid, page table for this process)
+			//use swap area instead (?)
 		}
        /**
 	* TODO:
@@ -76,4 +79,6 @@ void dispatch(ulong cause, ulong val, ulong *frame, ulong *program_counter) {
 			}
 		}
 	}
+	
+	//return page
 }
