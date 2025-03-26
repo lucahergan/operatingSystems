@@ -4,14 +4,14 @@
  * established.  After intialization, the null process remains always in
  * a ready or running state.
  */
-/* Embedded Xinu, Copyright (C) 2009, 2025.  All rights reserved. */
+/* Embedded Xinu, Copyright (C) 2009, 2020.  All rights reserved. */
 
 #include <xinu.h>
 
 /* Function prototypes */
 static int sysinit(void);       /* intializes system structures          */
 static void welcome(void);      /* Print inital O/S data                 */
-process main(void); 		/* xmain is the first process created    */
+process xmain(void);            /* xmain is the first process created    */
 
 /* Declarations of major kernel variables */
 pcb proctab[NPROC];             /* Process table                         */
@@ -25,8 +25,26 @@ int currpid;                    /* Id of currently running process       */
 void *memheap;                  /* Bottom of heap (top of O/S stack)     */
 ulong cpuid;                    /* Processor id                          */
 
+ulong *_kernpgtbl;              /* Kernel page table address             */
+ulong *_kernsp;                 /* Kernel stack pointer                  */
+struct pgmemblk *pgfreelist = NULL;
+                                /* Linked list of physical free pages    */
+uint pgtbl_nents = 0;           /* Number of pages in the entire system  */
+
 struct platform platform;       /* Platform specific configuration       */
 
+interrupt_handler_t interruptVector[ALLWINNER_D1_NUM_IRQS];
+/** Table of Xinu's interrupt handler functions.  
+ * This is an array mapping IRQ numbers to handler functions.  
+ */
+
+process nullproc(void)
+{
+    while (1)
+    {
+        user_yield();
+    }
+}
 
 void nulluser(void)
 {
@@ -39,21 +57,19 @@ void nulluser(void)
     /* Standard Embedded Xinu processor and memory info */
     welcome();
 
-    /* Call the main program */
-    main();
+    /* Create the linked list of free physical frames   */
+    pgInit();
 
-    /* Call the main program */
-//    ready(create((void *) main, INITSTK, "MAIN", 2, 0, NULL), 0);
+    /* Setup memory protection for kernel.  Turn paging on for kernel. */
+    // TODO: Uncomment this line once you have thoroughly tested paging.
+    // _kernpgtbl = vm_kerninit();
 
-	//testmain();
-	//testcases();
+    xmain();
 
-    /* null process has nothing else to do but cannot exit  */
-    while (1)
-    {
-        if (nonempty(readylist))
-            resched();
-    }
+    ready(create((void *)nullproc, INITSTK, PRIORITY_LOW, "prnull", 0),
+          RESCHED_NO);
+	
+    kill(0);
 }
 
 static void welcome(void)
@@ -91,7 +107,6 @@ static void welcome(void)
             (ulong)memheap, (ulong)platform.maxaddr - 1);
 
     kprintf("\r\n");
-
 }
 
 /**
@@ -120,11 +135,17 @@ static int sysinit(void)
     /* initialize null process entry */
     ppcb = &proctab[NULLPROC];
     ppcb->state = PRCURR;
-    strncpy(ppcb->name, "prnull", 7);
+    strncpy(ppcb->name, "main", 4);
+    ppcb->stkbase = (void *)&_end;
     ppcb->stklen = (ulong)memheap - (ulong)&_end;
+    ppcb->tickets = 1;
     currpid = NULLPROC;
 
     readylist = newqueue();
+
+    //clkinit();
+
+    seed_random(SEED);
 
     return OK;
 }

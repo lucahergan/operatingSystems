@@ -86,18 +86,19 @@ void testcases(void)
 
 	// TODO: Test your operating system!
 
-	//c = kgetc();
-	c = 'A';
+	c = kgetc();
 	switch (c)
 	{
 		case '0':
 			// TODO: Write a testcase that creates a user process
 			// and prints out it's page table
 			kprintf("Make myProcess\r\n");
-			int pid = ready(create((void *)myProcess, INITSTK, 1, "myProcess", 0), RESCHED_NO);
+			int pid = create((void *)myProcess, INITSTK, 1, "myProcess", 0);
 			kprintf("Made myProcess\r\n");
 			pgtbl myProcessTable = proctab[pid].pagetable;
 			printPageTable(myProcessTable);
+			ready(pid, RESCHED_YES);
+			// resched();
 			break;
 		case '1':
 			// TODO: Write a testcase that demonstrates a user

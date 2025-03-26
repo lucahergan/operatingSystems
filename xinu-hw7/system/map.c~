@@ -81,6 +81,7 @@ syscall mapPage(pgtbl pagetable, ulong vaddr, ulong paddr, int attr)
     * Once you've traversed all three levels, set the attributes (attr) for
     * the leaf page (don't forget to set the valid bit!)
     */
+	
 	ulong vpn2 = (vaddr >> 30) & 0x1ff;
 	ulong vpn1 = (vaddr >> 21) & 0x1ff;
 	ulong vpn0 = (vaddr >> 12) & 0x1ff;
@@ -107,14 +108,12 @@ syscall mapPage(pgtbl pagetable, ulong vaddr, ulong paddr, int attr)
 		//ALREADY MAPPED TO SOMETHING - IS THAT OKAY ? Do i need to return SYSERR? Do i need to wipe the old frame or something
 		level0table[vpn0] = PA2PTE(paddr) | PTE_V | attr;
 	} else {
-	  level0table[vpn0] = PA2PTE(paddr) | PTE_V | attr;
+		level0table[vpn0] = PA2PTE(paddr) | PTE_V | attr;
 	}
 
-	sfence_vma();
-
     //  DEBUGGING LINE:
-	// kprintf("mapPage(pt:0x%X, v:0x%X, p:0x%0X, a:0x%03X)\r\n",
-        //      pagetable, vaddr, paddr, attr);
+    //  kprintf("mapPage(pt:0x%X, v:0x%X, p:0x%0X, a:0x%03X)\r\n",
+    //          pagetable, vaddr, paddr, attr);
 
     return OK;
 }
