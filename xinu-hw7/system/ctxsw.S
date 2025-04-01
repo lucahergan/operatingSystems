@@ -55,8 +55,8 @@ ctxsw:
 	sd ra, 8*CTX_PC(t0)
 	sd ra, 8*CTX_RA(t0)
 	sd sp, 8*CTX_SP(t0)
-// TODO: Switch from old process stack to new process stack.
-	// TODO what exactly does this mean? is it fine that we ld sp later from the context array?
+	// TODO: Switch from old process stack to new process stack.
+	
 // TODO: Restore process state, including at least the
 //	callee-save ("non-volatile") registers.
 //	These call and restore segments must match the register data
@@ -88,7 +88,7 @@ ctxsw:
 	//jalr zero, t2, 0
 	//mv ra, t2
 
-	mv t0, t3
+	mv t0, t3 //t0 holds new PC
 	beq t0, ra, switch
 	li t4, SSTATUS_S_MODE
 	csrc sstatus, t4

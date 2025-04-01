@@ -100,9 +100,10 @@ syscall create(void *funcaddr, ulong ssize, uint priority, char *name, ulong nar
     va_end(ap);
 
     ppcb->ctx[CTX_RA] = (ulong)userret;
-    ppcb->ctx[CTX_SP] = (ulong)saddr;
+    ppcb->ctx[CTX_SP] = (ulong) (PROCSTACKVADDR | (0xfff & (ulong)saddr));
     ppcb->ctx[CTX_PC] = (ulong)funcaddr;
 	
+	// is ppcb->swaparea ever allocated ?
 	ppcb->swaparea[CTX_KERNSATP] = (ulong) MAKE_SATP(0, _kernpgtbl);
 	ppcb->swaparea[CTX_KERNSP] = (ulong) _kernsp;
 

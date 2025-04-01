@@ -36,7 +36,6 @@ void dispatch(ulong cause, ulong val, ulong *frame, ulong *program_counter) {
     if((long)cause > 0) {
         cause = cause << 1;
         cause = cause >> 1;
-	
 		if (cause != E_ENVCALL_FROM_UMODE) {
 		  xtrap(ppcb->swaparea, cause, val, (ulong*)program_counter);
 		}

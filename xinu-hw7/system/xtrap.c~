@@ -58,7 +58,7 @@ void xtrap(ulong *frame, ulong cause, ulong address, ulong *pc)
     kprintf("[0x%016lX]  s1:0x%016lX   a0:0x%016lX  a1:0x%016lX  a2:0x%016lX\r\n",
             frame + CTX_S1,
             frame[CTX_S1], frame[CTX_A0], frame[CTX_A1], frame[CTX_A2]);
-    kprintf("[0x%016lX]  t0:0x%016lX   t1:0x%016lX   t2:0x%016lX   s0:0x%016lX\r\n",
+    kprintf("[0x%016lX]  t0:0x%016lX   t2:0x%016lX   t3:0x%016lX   s0:0x%016lX\r\n",
             frame + CTX_T0,
             frame[CTX_T0], frame[CTX_T1], frame[CTX_T2], frame[CTX_S0]);
     kprintf("[0x%016lX]  ra:0x%016lX   sp:0x%016lX   gp:0x%016lX   tp:0x%016lX\r\n",

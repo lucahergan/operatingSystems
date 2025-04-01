@@ -65,7 +65,16 @@ void printPageTableRecursive(pgtbl pagetable, int depth, ulong vaddr) {
 			printPageTableRecursive(nextTable, depth-1, (vaddr<<9) + i);
 		} else {
 			for (j = depth; j < 2; j++) kprintf("     ");
-			kprintf("%03d: Physical frame at %08X\r\n", i, PTE2PA(pagetable[i]));
+			kprintf("%03d: Physical frame at %08X, permissions ", i, PTE2PA(pagetable[i]));
+			if (pagetable[i] & PTE_V) kprintf("v"); else kprintf("-");
+			if (pagetable[i] & PTE_R) kprintf("r"); else kprintf("-");
+			if (pagetable[i] & PTE_W) kprintf("w"); else kprintf("-");
+			if (pagetable[i] & PTE_X) kprintf("x"); else kprintf("-");
+			if (pagetable[i] & PTE_U) kprintf("u"); else kprintf("-");
+			if (pagetable[i] & PTE_G) kprintf("g"); else kprintf("-");
+			if (pagetable[i] & PTE_A) kprintf("a"); else kprintf("-");
+			if (pagetable[i] & PTE_D) kprintf("d"); else kprintf("-");
+			kprintf("\r\n");
 			//kprintf("virtual address %08X maps to physical address %08X\r\n", (vaddr<<9)+i, PTE2PA(pagetable[i]));
 		}
 	}
@@ -73,6 +82,22 @@ void printPageTableRecursive(pgtbl pagetable, int depth, ulong vaddr) {
 
 void myProcess() {
 	kprintf("this is my process\r\n");
+}
+
+void processThatTriesToAccessBadMemory() {
+	kprintf("I am a process who will try to access memory that I shouldn't\r\n");
+	int* pointer = 3;
+	int value = *(pointer);
+	kprintf("I am done, the value at that address is %d\r\n", value);
+}
+
+void processThatReadsAndWritesKernelVariables() {
+	kprintf("Try to read kernel variable: proctab[0].name = %s\r\n", proctab[0].name);
+	kprintf("Going to write to that now\r\n");
+	proctab[0].name[0] = 'x';
+	proctab[0].name[1] = 'x';
+	proctab[0].name[2] = 'x';
+	kprintf("Read kernel variable again: proctab[0].name = %s\r\n", proctab[0].name);
 }
 
 /**
@@ -83,8 +108,15 @@ void testcases(void)
 	uchar c;
 
 	kprintf("===TEST BEGIN===\r\n");
-
+	kprintf("0) Create a user process, print its page table, run process\r\n");
+	kprintf("1) Run a process that tries to access a region of memory it shouldn't\r\n");
+	kprintf("2) Run a process that reads a kernel variable, then tries to write to a kernel variable\r\n");
+	kprintf("3) Try to access content from a null pointer, will cause Null pointer exception\r\n");
+	kprintf("A) Create a fake page table, print it, call mapPage several times, then print it again\r\n");
+	  
 	// TODO: Test your operating system!
+	
+	int pid;
 
 	c = kgetc();
 	switch (c)
@@ -93,27 +125,33 @@ void testcases(void)
 			// TODO: Write a testcase that creates a user process
 			// and prints out it's page table
 			kprintf("Make myProcess\r\n");
-			int pid = create((void *)myProcess, INITSTK, 1, "myProcess", 0);
+			pid = create((void *)myProcess, INITSTK, 1, "myProcess", 0);
 			kprintf("Made myProcess\r\n");
 			pgtbl myProcessTable = proctab[pid].pagetable;
 			printPageTable(myProcessTable);
+			kprintf("^^ page table for process %d\r\n", pid);
 			ready(pid, RESCHED_YES);
-			// resched();
 			break;
 		case '1':
 			// TODO: Write a testcase that demonstrates a user
 			// process cannot access certain areas of memory
+			pid = create((void *)processThatTriesToAccessBadMemory, INITSTK, 1, "myProcess", 0);
+			ready(pid, RESCHED_YES);
 			break;
 		case '2':
 			// TODO: Write a testcase that demonstrates a user
 			// process can read kernel variables but cannot write
 			// to them
+			pid = create((void *)processThatReadsAndWritesKernelVariables, INITSTK, 1, "myProcess", 0);
+			ready(pid, RESCHED_YES);
 			break;
 		case '3':
 			// TODO: Extra credit! Add handling in xtrap to detect
 			// and print out a Null Pointer Exception.  Write a
 			// testcase that demonstrates your OS can detect a
 			// Null Pointer Exception.
+		  int* pointer = 0;
+		  kprintf("%d\r\n", *pointer);
 			break;
 		case 'A':
 			// Create a fake page table, print its content, use magePage to map

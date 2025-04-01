@@ -62,7 +62,7 @@ void nulluser(void)
 
     /* Setup memory protection for kernel.  Turn paging on for kernel. */
     // TODO: Uncomment this line once you have thoroughly tested paging.
-    // _kernpgtbl = vm_kerninit();
+    _kernpgtbl = vm_kerninit();
 
     xmain();
 
@@ -139,6 +139,7 @@ static int sysinit(void)
     ppcb->stkbase = (void *)&_end;
     ppcb->stklen = (ulong)memheap - (ulong)&_end;
     ppcb->tickets = 1;
+    // ppcb->pagetable = vm_userinit(NULLPROC, (void*)&_end);
     currpid = NULLPROC;
 
     readylist = newqueue();

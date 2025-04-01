@@ -3,6 +3,8 @@
  * @provides create, newpid, userret
  *
  * COSC 3250 Assignment 4
+ * Completes the implementation for create(), which sets up a PCB
+ * with a context block and other information for the scheduler.
  * @author David Mathu
  * @author Luca Hergan
  * Instructor Dr. Brylow
@@ -21,11 +23,12 @@ void *getstk(ulong);
  * Create a new process to start running a function.
  * @param funcaddr address of function that will begin in new process
  * @param ssize    stack size in bytes
+ * @param priority priority of the process
  * @param name     name of the process, used for debugging
  * @param nargs    number of arguments that follow
  * @return the new process id
  */
-syscall create(void *funcaddr, ulong ssize, char *name, ulong nargs, ...)
+syscall create(void *funcaddr, ulong ssize, uint priority, char *name, ulong nargs, ...)
 {
     ulong *saddr;               /* stack address                */
     ulong pid;                  /* stores new process id        */
@@ -39,7 +42,8 @@ syscall create(void *funcaddr, ulong ssize, char *name, ulong nargs, ...)
 
     ssize = (ulong)((((ulong)(ssize + 3)) >> 2) << 2);
     /* round up to even boundary    */
-    saddr = (ulong *)getstk(ssize);     /* allocate new stack and pid   */
+    saddr = (ulong *)pgalloc();     /* allocate new stack and pid   */
+	saddr = (ulong*) ((ulong)saddr + PAGE_SIZE - sizeof(ulong)); //move saddr from bottom of frame to top of frame
     pid = newpid();
     /* a little error checking      */
     if ((((ulong *)SYSERR) == saddr) || (SYSERR == pid))
@@ -55,10 +59,13 @@ syscall create(void *funcaddr, ulong ssize, char *name, ulong nargs, ...)
     ppcb->stkbase = saddr;
     strncpy(ppcb->name, name, PNMLEN);
     ppcb->stklen = ssize;
-    kprintf("Setup PCB for %s (stack base 0x%08X, stack length %d)\r\n", ppcb->name, (void*)ppcb->stkbase, ppcb->stklen);
+	ppcb->tickets = priority;
+	
+	//"get a physical address to use as the stack", pass it to vm_userinit too
+	ppcb->pagetable = vm_userinit(pid, saddr);
 
     /* Initialize stack with accounting block. */
-    *saddr = STACKMAGIC;
+    *saddr = STACKMAGIC; //actually, this needs to point to the correct place in PHYSICAL memory to line up with the top of the frame
     *--saddr = pid;
     *--saddr = ppcb->stklen;
     *--saddr = (ulong)ppcb->stkbase;
@@ -90,13 +97,15 @@ syscall create(void *funcaddr, ulong ssize, char *name, ulong nargs, ...)
 	else
             saddr[i - ARG_REG_MAX] = va_arg(ap, ulong);
     }
+    va_end(ap);
 
     ppcb->ctx[CTX_RA] = (ulong)userret;
     ppcb->ctx[CTX_SP] = (ulong)saddr;
     ppcb->ctx[CTX_PC] = (ulong)funcaddr;
-    kprintf("PCB's ra, sp, pc are %08X, %08X, %08X\r\n", ppcb->ctx[CTX_RA], ppcb->ctx[CTX_SP], ppcb->ctx[CTX_PC]);
-
-    va_end(ap);
+	
+	// is ppcb->swaparea ever allocated ?
+	ppcb->swaparea[CTX_KERNSATP] = (ulong) MAKE_SATP(0, _kernpgtbl);
+	ppcb->swaparea[CTX_KERNSP] = (ulong) _kernsp;
 
     return pid;
 }
@@ -129,5 +138,6 @@ void userret(void)
     // ASSIGNMENT 5 TODO: Replace the call to kill(); with user_kill();
     // when you believe your trap handler is working in Assignment 5
     // user_kill();
-    kill(currpid); 
+    user_kill(); 
+    //kill(currpid);
 }
