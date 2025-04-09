@@ -1,1 +1,1 @@
-#define VERSION "(Embedded Xinu) (nezhaobj) #579 (dmathu@morbius.mscsnet.mu.edu) Fri Apr 4 10:51:03 PM CDT 2025"
+#define VERSION "(Embedded Xinu) (nezhaobj) #582 (dmathu@morbius.mscsnet.mu.edu) Tue Apr 8 08:32:40 PM CDT 2025"

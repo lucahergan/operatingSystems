@@ -26,7 +26,6 @@ void *memheap;                  /* Bottom of heap (top of O/S stack)     */
 ulong cpuid;                    /* Processor id                          */
 
 ulong *_kernpgtbl;              /* Kernel page table address             */
-ulong *_kernsp;                 /* Kernel stack pointer                  */
 struct pgmemblk *pgfreelist = NULL;
                                 /* Linked list of physical free pages    */
 uint pgtbl_nents = 0;           /* Number of pages in the entire system  */
@@ -68,7 +67,6 @@ void nulluser(void)
 
     ready(create((void *)nullproc, INITSTK, PRIORITY_LOW, "prnull", 0),
           RESCHED_NO);
-	
     kill(0);
 }
 
@@ -139,7 +137,6 @@ static int sysinit(void)
     ppcb->stkbase = (void *)&_end;
     ppcb->stklen = (ulong)memheap - (ulong)&_end;
     ppcb->tickets = 1;
-    // ppcb->pagetable = vm_userinit(NULLPROC, (void*)&_end);
     currpid = NULLPROC;
 
     readylist = newqueue();

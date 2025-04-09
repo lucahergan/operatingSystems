@@ -104,7 +104,7 @@ syscall create(void *funcaddr, ulong ssize, uint priority, char *name, ulong nar
     ppcb->ctx[CTX_PC] = (ulong)funcaddr;
 	
 	// is ppcb->swaparea ever allocated ?
-	ppcb->swaparea[CTX_KERNSATP] = (ulong) MAKE_SATP(0, _kernpgtbl);
+	//ppcb->swaparea[CTX_KERNSATP] = (ulong) MAKE_SATP(0, _kernpgtbl); //Removed with 4/7/2025 bug fix
 	// ppcb->swaparea[CTX_KERNSP] = (ulong) _kernsp; //Commented out in class on 4/4/2025
 
     return pid;
