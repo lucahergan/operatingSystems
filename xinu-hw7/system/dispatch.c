@@ -42,6 +42,8 @@ void dispatch(ulong cause, ulong val, ulong *frame, ulong *program_counter) {
 		else {
 			//frame[CTX_A7] is the system call from register A7
 			ulong ret_val = syscall_dispatch(ppcb->swaparea[CTX_A7], ppcb->swaparea);
+			
+			ppcb = &proctab[currpid]; //Added in class on 4/4/2025
 
 			//Change A0 to return value based on what was received from syscall_dispatch
 			ppcb->swaparea[CTX_A0] = ret_val;
