@@ -1,6 +1,10 @@
 /**
  * @file freemem.c
  *
+ * Modified by:	David Mathu, Luca Hergan
+ *
+ * TA-BOT:MAILTO david.mathu@marquette.edu
+ * TA-BOT:MAILTO luca.hergan@marquette.edu
  */
 /* Embedded Xinu, Copyright (C) 2009.  All rights reserved. */
 
@@ -78,7 +82,6 @@ syscall freemem(void *memptr, uint nbytes)
 	//New loop through linked list to coalesce
 	looking_at = previous;
 	while (looking_at) {
-		//kprintf("at %08X~%08X, points to %08X\r\n", looking_at, (ulong)looking_at+looking_at->length, looking_at->next);
 		if ((ulong)looking_at + looking_at->length == (ulong)(looking_at->next)) {
 			looking_at->length += looking_at->next->length;
 			looking_at->next = looking_at->next->next;

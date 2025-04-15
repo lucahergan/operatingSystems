@@ -3,9 +3,10 @@
  * @provides testcases
  *
  *
- * Modified by:	
+ * Modified by:	David Mathu, Luca Hergan
  *
- * TA-BOT:MAILTO 
+ * TA-BOT:MAILTO david.mathu@marquette.edu
+ * TA-BOT:MAILTO luca.hergan@marquette.edu
  *
  */
 /* Embedded XINU, Copyright (C) 2023.  All rights reserved. */
@@ -55,6 +56,22 @@ void processGetmemFreemem() {
 	freemem(ptr2, 256);
 	print_free_list((memhead*) proctab[currpid].heaptop);
 }
+
+void powers() {
+	print_free_list((memhead*) proctab[currpid].heaptop);
+	void* ptr1 = getmem(65536);
+	kprintf("getmem(%d) = 0x%08X\r\n", 65536, ptr1);
+	void* ptr2 = getmem(1048576);
+	kprintf("getmem(%d) = 0x%08X\r\n", 1048576, ptr2);
+	void* ptr3 = getmem(1048576);
+	kprintf("getmem(%d) = 0x%08X\r\n", 1048576, ptr3);
+	print_free_list((memhead*) proctab[currpid].heaptop);
+	freemem(ptr1, 65536);
+	freemem(ptr2, 1048576);
+	freemem(ptr3, 1048576);
+	kprintf("freemem() them both\r\n");
+	print_free_list((memhead*) proctab[currpid].heaptop);
+}
 	
 
 /**
@@ -65,10 +82,10 @@ void testcases(void)
 	uchar c;
 
 	kprintf("===TEST BEGIN===\r\n");
-	kprintf("Test cases from project 8\r\n");
-	kprintf("2) getmem() calls that will take more than a page\r\n");
-	kprintf("3) getmem() calls\r\n");
-	kprintf("4) getmem() calls\r\n");
+	kprintf("2) Use getmem() to get 0x1100 bytes, and free them\r\n");
+	kprintf("3) Several small getmem() and freemem() calls\r\n");
+	kprintf("4) Use malloc() to get 0x1100 bytes, and free them\r\n");
+	kprintf("5) Mimics powers test case\r\n");
 	  
 	// TODO: Test your operating system!
 	
@@ -77,25 +94,6 @@ void testcases(void)
 	c = kgetc();
 	switch (c)
 	{
-		/* case '0':
-			proctab[0].heaptop = pgalloc();
-			memhead* mh = (memhead*) proctab[0].heaptop;
-			mh->head = mh + 1;
-			mh->length = PAGE_SIZE - sizeof(struct memhead);
-			mh->base = mh->head;
-			mh->bound = ((ulong)mh) + PAGE_SIZE;
-			mh->head->next = NULL;
-			mh->head->length = mh->length;
-			kprintf("Free list right now:\r\n");
-			print_free_list(mh);
-			void* my_memory = malloc(0x100); //request 0x100 bytes
-			kprintf("Free list after I requested 0x100 bytes:\r\n");
-			print_free_list(mh);
-			kprintf("My request 0x100 bytes are at %08X\r\n", my_memory);
-			free(my_memory);
-			kprintf("Free list after I freed my 0x100 bytes:\r\n");
-			print_free_list(mh);
-			break; */
 		case '2':
 			pid = create((void *)processThatRequestsLotsOfMemory, INITSTK, 1, "myProcess", 1, 0x1100);
 			ready(pid, RESCHED_YES);
@@ -106,6 +104,10 @@ void testcases(void)
 			break;
 		case '4':
 			pid = create((void *)processThatRequestsLotsOfMemoryUsingMalloc, INITSTK, 1, "myProcess", 1, 0x1100);
+			ready(pid, RESCHED_YES);
+			break;
+		case '5':
+			pid = create((void *)powers, INITSTK, 1, "myProcess", 0);
 			ready(pid, RESCHED_YES);
 			break;
 		default:
