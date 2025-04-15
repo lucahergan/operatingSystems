@@ -14,30 +14,45 @@
 
 void print_free_list(struct memhead* mh) {
 	struct memblock* block = mh->head;
-	kprintf("   FREE LIST (length: 0x%08X)\r\n", mh->length);
+	kprintf("\tFREE LIST (length: 0x%08X)\r\n", mh->length);
 	while (block) {
-		kprintf("   At 0x%08X (length: 0x%08X), goes to 0x%08X\r\n", block, block->length, (ulong)block + (ulong)(block->length));
+		kprintf("\tAt 0x%08X (length: 0x%X), goes until 0x%08X, points to 0x%08X\r\n", block, block->length, (ulong)block + (ulong)(block->length), block->next);
 		block = block->next;
 	}
 }
 
-void processWithMallocAndFree() {
+void processThatRequestsLotsOfMemory(ulong nbytes) {
 	print_free_list((memhead*) proctab[currpid].heaptop);
-	void* pointer = malloc(0x100);
-	kprintf("I just malloced 0x100 bytes, they're at %08X\r\n", pointer);
+	void* pointer = getmem(nbytes);
+	kprintf("I just got 0x%08X bytes, they're at %08X\r\n", nbytes, pointer);
+	print_free_list((memhead*) proctab[currpid].heaptop);
+	freemem(pointer, nbytes);
+	kprintf("I just freed them\r\n");
+	print_free_list((memhead*) proctab[currpid].heaptop);
+}
+
+void processThatRequestsLotsOfMemoryUsingMalloc(ulong nbytes) {
+	print_free_list((memhead*) proctab[currpid].heaptop);
+	void* pointer = malloc(nbytes);
+	kprintf("I just MALLOCED 0x%08X bytes, they're at %08X\r\n", nbytes, pointer);
 	print_free_list((memhead*) proctab[currpid].heaptop);
 	free(pointer);
 	kprintf("I just freed them\r\n");
 	print_free_list((memhead*) proctab[currpid].heaptop);
 }
 
-void processThatRequestsLotsOfMemory() {
+void processGetmemFreemem() {
 	print_free_list((memhead*) proctab[currpid].heaptop);
-	void* pointer = malloc(0x1100);
-	kprintf("I just malloced 0x100 bytes, they're at %08X\r\n", pointer);
+	void* ptr1 = getmem(256);
+	kprintf("getmem(256) = 0x%08X\r\n", ptr1);
+	void* ptr2 = getmem(256);
+	kprintf("getmem(256) = 0x%08X\r\n", ptr2);
 	print_free_list((memhead*) proctab[currpid].heaptop);
-	free(pointer);
-	kprintf("I just freed them\r\n");
+	kprintf("Free the first one\r\n");
+	freemem(ptr1, 256);
+	print_free_list((memhead*) proctab[currpid].heaptop);
+	kprintf("Free the second one\r\n");
+	freemem(ptr2, 256);
 	print_free_list((memhead*) proctab[currpid].heaptop);
 }
 	
@@ -51,9 +66,9 @@ void testcases(void)
 
 	kprintf("===TEST BEGIN===\r\n");
 	kprintf("Test cases from project 8\r\n");
-	// kprintf("0) Manually set up a memory heap, request 100 bytes, then free 100 bytes\r\n");
-	kprintf("1) Create process that mallocs and frees. Prints free list before/after every operation\r\n");
-	kprintf("2) Same as above, but takes more than a page\r\n");
+	kprintf("2) getmem() calls that will take more than a page\r\n");
+	kprintf("3) getmem() calls\r\n");
+	kprintf("4) getmem() calls\r\n");
 	  
 	// TODO: Test your operating system!
 	
@@ -81,12 +96,16 @@ void testcases(void)
 			kprintf("Free list after I freed my 0x100 bytes:\r\n");
 			print_free_list(mh);
 			break; */
-		case '1':
-			pid = create((void *)processWithMallocAndFree, INITSTK, 1, "myProcess", 0);
+		case '2':
+			pid = create((void *)processThatRequestsLotsOfMemory, INITSTK, 1, "myProcess", 1, 0x1100);
 			ready(pid, RESCHED_YES);
 			break;
-		case '2':
-			pid = create((void *)processThatRequestsLotsOfMemory, INITSTK, 1, "myProcess", 0);
+		case '3':
+			pid = create((void *)processGetmemFreemem, INITSTK, 1, "myProcess", 0);
+			ready(pid, RESCHED_YES);
+			break;
+		case '4':
+			pid = create((void *)processThatRequestsLotsOfMemoryUsingMalloc, INITSTK, 1, "myProcess", 1, 0x1100);
 			ready(pid, RESCHED_YES);
 			break;
 		default:

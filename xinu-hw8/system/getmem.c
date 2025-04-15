@@ -43,47 +43,87 @@ void *getmem(uint nbytes)
      *      - return memory address if successful
      */
 	 
-	 struct memblock* looking_at = head->head;
-	 struct memblock* previous = NULL;
+	curr = head->head;
+	prev = NULL;
 	 
 	 while (1) {
-		if (looking_at->length > nbytes) {
+		if (curr->length > nbytes) {
 			//we are going to take a chunk of memory out of looking_at
 			//specifically from the start
-			void* pointer_to_return = (void*) looking_at;
-			struct memblock* new_block = (struct memblock*)(((void*)looking_at) + nbytes);
-			new_block->length = looking_at->length - nbytes;
-			new_block->next = looking_at->next;
-			if (previous) {
-				previous->next = new_block;
+			void* pointer_to_return = (void*) curr;
+			// kprintf("pointer to return part 1: %08x \r\n", pointer_to_return);
+			// kprintf("pointer to return part 1: %08x \r\n", pointer_to_return);
+			struct memblock* new_block = (struct memblock*)(((void*)curr) + nbytes);
+			new_block->length = curr->length - nbytes;
+			new_block->next = curr->next;
+			if (prev) {
+				prev->next = new_block;
 			} else {
 				head->head = new_block;
 			}
 			head->length -= nbytes;
+			// kprintf("pointer to return part 2: %08x \r\n", pointer_to_return);
 			return pointer_to_return;
-		} else if (looking_at->length == nbytes) {
+		} else if (curr->length == nbytes) {
 			//remove looking_at and return its address
-			if (previous != NULL) {
-				previous->next = looking_at->next;
+			if (prev != NULL) {
+				prev->next = curr->next;
 			} else {
-				head->head = looking_at->next;
+				head->head = curr->next;
 			}
-			looking_at->length = 0;
-			looking_at->next = NULL;
+			curr->length = 0;
+			curr->next = NULL;
 			head->length -= nbytes;
-			return (void*) looking_at;
-		} else {
-			previous = looking_at;
-			looking_at = looking_at->next;
+			return (void*) curr;
 		}
-		if (looking_at == NULL) {
+		
+			//Recursive 
+		
+		/* else {
+			prev = curr;
+			curr = curr->next;
+		}
+		if (curr == NULL) {
 			//looking at end of list :( do the backup thing
+			//create new pages, and let the block previous take them on
+			//take stuff out of this new giant block
 			
-			//TODO: call user_incheap
-			// problem: incheap and heapinit are currently giving warnings of implicit declaration
-			// so they're not   working
-			
-			return (void*) SYSERR;
+			ulong new_space = roundpage(nbytes - prev->length);
+			user_incheap(new_space);
+			prev->length += new_space;
+			head->length += new_space;
+			return getmem(nbytes);
+		}
+		//Iterative
+		else if (curr->next == NULL && curr->length < nbytes) {
+			ulong new_space_needed;
+			new_space_needed = roundpage(nbytes - curr->length);
+			user_incheap(new_space_needed);
+			kprintf("We just got %d pages\r\n", new_space_needed/PAGE_SIZE);
+			curr->length += new_space_needed;
+			head->length += new_space_needed;
+			//will return previous
+			leftover = (struct memblock*)(curr + nbytes);
+			leftover->next = NULL;
+			leftover->length = curr->length - nbytes;
+			if (prev) prev->next = leftover;
+			else head->head = leftover;
+			return curr;
+		} */
+		else if (curr->next == NULL && curr->length < nbytes) {
+			//curr is last block, we need to make remainder
+			void* new_allocated_block = user_incheap(nbytes);
+			if (nbytes % PAGE_SIZE < sizeof(struct memblock)) user_incheap(PAGE_SIZE); // Prevent leftover from not having space for accounting memblock
+			leftover = (struct memblock*)(new_allocated_block + nbytes);
+			// if (prev) prev->next = leftover;
+			// else head->head = leftover;
+			curr->next = leftover;
+			leftover->next = NULL;
+			leftover->length = PAGE_SIZE - (nbytes % PAGE_SIZE);
+			return new_allocated_block;
+		} else {
+			prev = curr;
+			curr = curr->next;
 		}
 	}
 

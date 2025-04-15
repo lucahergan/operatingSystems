@@ -47,51 +47,43 @@ syscall freemem(void *memptr, uint nbytes)
      *      - Coalesce with next block if adjacent
      */
 	 
-	 /*
-	 walk from start to back, insert once
-	 
-	 previous = the previous node, starts as null
-	 looking_at = the current node
-	 
-	 */
-	 
-	 struct memblock* previous = NULL;
+	 struct memblock* previous = (struct memblock*)head;
 	 struct memblock* looking_at = head->head;
-	 
-	if ((ulong)looking_at > (ulong)memptr) {
-		// first node is already too far, handle manually
-		struct memblock* new_first_block = (struct memblock*) memptr;
-		//kprintf("//nbytes = 0x%X right here\r\n", nbytes);
-		new_first_block->length = nbytes;
-		new_first_block->next = looking_at;
-		head->head = new_first_block;
-		//we want looking_at >= new_first_block
-		previous = new_first_block;
-	}
 	 
 	while (looking_at && ((ulong)looking_at < (ulong)memptr)) {
 		previous = looking_at;
 		looking_at = looking_at->next;
 	}
 	
-	if (previous) if ((ulong)previous + previous->length > (ulong)memptr) {
+	if (previous == head) {
+		//we are inserting new free block at front
+		block->length = nbytes;
+		block->next = head->head; //make our block point to what used to be the first node
+		head->head = block;
+	} else if (previous && (((ulong)previous + previous->length) > (ulong)memptr)) {
 		//overlap previous block
+		kprintf("Overlap with previous block\r\n");
 		return SYSERR;
-	}
-	if (looking_at) if ((ulong)memptr + nbytes > (ulong)looking_at) {
+	} else if (looking_at && (((ulong)memptr + nbytes) > (ulong)looking_at)) {
 		//overlap next block
+		kprintf("Overlap with next block\r\n");
 		return SYSERR;
+	} else {
+		//previous isn't head, needs to point to this new block
+		block->next = previous->next;
+		block->length = nbytes;
+		previous->next = block;
 	}
 	
-	if (previous && ((ulong)previous + previous->length == (ulong)memptr)) {
-		block = previous;
-		previous->length += nbytes;
-	} else {
-		((struct memblock*)memptr)->length = nbytes;
-		block->next = looking_at->next;
+	//New loop through linked list to coalesce
+	looking_at = previous;
+	while (looking_at) {
+		//kprintf("at %08X~%08X, points to %08X\r\n", looking_at, (ulong)looking_at+looking_at->length, looking_at->next);
+		if ((ulong)looking_at + looking_at->length == (ulong)(looking_at->next)) {
+			looking_at->length += looking_at->next->length;
+			looking_at->next = looking_at->next->next;
+		} else looking_at = looking_at->next;
 	}
-	//kprintf("JUST RAN FREEMEM, prev = 0x%08X, looking_at = 0x%08X\r\n", previous, looking_at);
-	//kprintf("Hello\r\n");
 	
 	head->length += nbytes;
 

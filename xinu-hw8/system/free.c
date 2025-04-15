@@ -24,7 +24,7 @@ void free(void *ptr)
      *      3) call freemem on the block with its length
      */
 	 
-	 block = (struct memblock*)(ptr - sizeof(struct memblock*));
+	 block = (struct memblock*)(ptr - sizeof(struct memblock));
 	 
 	 freemem((void*) block, block->length);
 }

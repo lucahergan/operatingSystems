@@ -27,22 +27,22 @@ void *malloc(ulong size)
         return NULL;
     }
 
-      /** TODO:
-      *      1) Make room for accounting info
-      *      2) Acquire memory with getmem
-      *         - handle possible error (SYSERR) from getmem...
-      *      3) Set accounting info in pmem
-      */
-	  
-	  ulong bytes_needed = size + sizeof(struct memblock);
-	  
-	  void* pointer = getmem(bytes_needed);
-	  
-	  struct memblock* accounting_info = (struct memblock*) pointer;
-	  accounting_info->length = bytes_needed; //stores full size of this allocation, including accounting info
-	  accounting_info->next = NULL;
-	  
-	  return pointer + sizeof(struct memblock*);
+	/** TODO:
+	*      1) Make room for accounting info
+	*      2) Acquire memory with getmem
+	*         - handle possible error (SYSERR) from getmem...
+	*      3) Set accounting info in pmem
+	*/
+	
+	ulong bytes_needed = size + sizeof(struct memblock);
+
+	void* pointer = getmem(bytes_needed);
+
+	struct memblock* accounting_info = (struct memblock*) pointer;
+	accounting_info->length = bytes_needed; //stores full size of this allocation, including accounting info
+	accounting_info->next = NULL;
+
+	return pointer + sizeof(struct memblock);
 
     return (void *)SYSERR;
 }
