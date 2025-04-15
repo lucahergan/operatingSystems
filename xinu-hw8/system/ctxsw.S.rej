@@ -1,0 +1,18 @@
+--- system/ctxsw.S	2025-02-12 21:50:12.000000000 -0600
++++ system/ctxsw.S	2025-04-11 15:46:30.689561847 -0500
+@@ -8,13 +8,13 @@
+ 
+ #include <riscv.h>
+ 
+-.text
++.section .ctxswsec
+ 	.align 4
+ 	.globl	ctxsw
+ 
+ 
+ /**
+- * @fn void ctxsw(&oldcontext, &newcontext)
++ * @fn void ctxsw(&oldcontext, &newcontext, newpagetable)
+  *
+  * Switch context (values in registers) to another process, saving the
+  * current processes information. This function will not return as normally

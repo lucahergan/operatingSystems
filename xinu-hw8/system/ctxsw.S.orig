@@ -30,7 +30,6 @@
  *
  * @param  &oldcontext address of outgoing process context save area
  * @param  &newcontext address of incoming process context save area
- * @param  newpagetable SATP value for new process
  * @return special case -- see above
  */
 	.func ctxsw

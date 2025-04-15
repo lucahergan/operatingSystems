@@ -29,21 +29,20 @@
  //change return value in a0
  //program counter is pointer to code
 
-ulong dispatch(ulong cause, ulong val, ulong *frame, ulong *program_counter) {
+void dispatch(ulong cause, ulong val, ulong *frame, ulong *program_counter) {
     ulong swi_opcode;
     pcb* ppcb = &proctab[currpid];
     
     if((long)cause > 0) {
         cause = cause << 1;
         cause = cause >> 1;
+	
 		if (cause != E_ENVCALL_FROM_UMODE) {
 		  xtrap(ppcb->swaparea, cause, val, (ulong*)program_counter);
 		}
 		else {
 			//frame[CTX_A7] is the system call from register A7
 			ulong ret_val = syscall_dispatch(ppcb->swaparea[CTX_A7], ppcb->swaparea);
-			
-			ppcb = &proctab[currpid]; //Added in class on 4/4/2025
 
 			//Change A0 to return value based on what was received from syscall_dispatch
 			ppcb->swaparea[CTX_A0] = ret_val;

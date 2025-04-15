@@ -52,12 +52,14 @@ interrupt:
     sd s11, CTX_S11*8(t0)
     sd t3, CTX_T3*8(t0)
     sd t4, CTX_T4*8(t0)
-    sd t5, CTX_T5*8(t0) //in create, these v two values need to be handled
+    sd t5, CTX_T5*8(t0)
     sd t6, CTX_T6*8(t0)
-   
+  
+    // Correct virtual SP to physical SP	
+    ld   a0, CTX_SPOFFSET*8(t0)
+    sub  sp, sp, a0
     // Load kernel page table
-    ld a0, CTX_KERNSATP*8(t0)	
-    ld sp, CTX_KERNSP*8(t0)
+    ld   a0, CTX_KERNSATP*8(t0)	
     // call set_satp
     sfence.vma zero, zero
     csrw satp, a0

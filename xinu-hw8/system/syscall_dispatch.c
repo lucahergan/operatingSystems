@@ -11,7 +11,7 @@
 #define SCARG(type, args)  (type)(*args++)
 
 /* macro to make user->kernel syscalls */
-#define SYSCALL(num) int status; \
+#define SYSCALL(num) ulong status; \
     asm("li a7, %0" : : "i"(SYSCALL_##num)); \
     asm("ecall"); \
 	asm("mv %0, a0" : "=r"(status)); \
@@ -24,6 +24,7 @@ syscall sc_yield(ulong *);
 syscall sc_getc(ulong *);
 syscall sc_putc(ulong *);
 syscall sc_kill(ulong *);
+void *sc_incheap(ulong *);
 
 /* table for determining how to call syscalls */
 const struct syscall_info syscall_table[] = {
@@ -40,10 +41,11 @@ const struct syscall_info syscall_table[] = {
     { 2, (void *)sc_none },     /* SYSCALL_SEEK      = 10 */
     { 4, (void *)sc_none },     /* SYSCALL_CONTROL   = 11 */
     { 1, (void *)sc_none },     /* SYSCALL_GETDEV    = 12 */
-    { 4, (void *)sc_none },   /* SYSCALL_CREATE    = 13 */
+    { 4, (void *)sc_none },     /* SYSCALL_CREATE    = 13 */
     { 2, (void *)sc_none },     /* SYSCALL_JOIN      = 14 */
     { 1, (void *)sc_none },     /* SYSCALL_LOCK      = 15 */
-    { 1, (void *)sc_none },   /* SYSCALL_UNLOCK    = 16 */
+    { 1, (void *)sc_none },     /* SYSCALL_UNLOCK    = 16 */
+    { 1, (void *)sc_incheap },  /* SYSCALL_INCHEAP    = 17 */
 };
 
 int nsyscall = sizeof(syscall_table) / sizeof(struct syscall_info);
@@ -55,7 +57,7 @@ int nsyscall = sizeof(syscall_table) / sizeof(struct syscall_info);
  * @param code syscall code to execute
  * @param args pointer to arguments for syscall
  */
-int syscall_dispatch(int code, ulong *args)
+syscall syscall_dispatch(int code, ulong *args)
 {
     if (0 <= code && code < nsyscall)
     {
@@ -145,20 +147,18 @@ syscall user_kill(void)
     SYSCALL(KILL);
 }
 
-
 /**
- * syscall for user_printf
- * Modeled after kprintf in system/kprintf.c
- * Uses calls to user_putc
- * Does not work, but does work if you hand kputc to _doprnt (in lieu of user_putc)
- * We suspect the problem has to do with how _doprnt handles this user syscall function
+ * syscall wrapper for kill().
+ * @param args expands to: ulong size
  */
-syscall user_printf(int descrp, char* format, ...)
+void *sc_incheap(ulong *args)
 {
-	int retval;
-	va_list ap;
-	va_start(ap, format);
-	retval = _doprnt(format, ap, (int (*)(long, long))user_putc, descrp);
-	va_end(ap);
-	return retval;
+    ulong size = SCARG(ulong, args);
+
+    return incheap(size);
+}
+
+syscall user_incheap(ulong size)
+{
+    SYSCALL(INCHEAP);
 }

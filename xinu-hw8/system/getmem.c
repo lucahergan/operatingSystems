@@ -21,7 +21,7 @@
  *      The returned pointer is guaranteed to be 8-byte aligned.  Free the block
  *      with memfree() when done with it.
  */
-void *getmem(ulong nbytes)
+void *getmem(uint nbytes)
 {
     register memblk *prev, *curr, *leftover;
 
@@ -31,8 +31,8 @@ void *getmem(ulong nbytes)
     }
 
     /* round to multiple of memblock size   */
-    nbytes = (ulong)roundmb(nbytes);
-    struct memhead *head = (memhead *)PROCHEAPADDR;
+    nbytes = (uint)roundmb(nbytes);
+    struct memhead *head = (memhead *)proctab[currpid].heaptop;
 
     /* TODO:
      *      - Traverse through the freelist
@@ -43,36 +43,49 @@ void *getmem(ulong nbytes)
      *      - return memory address if successful
      */
 	 
-	 struct memblock* previous = NULL;
 	 struct memblock* looking_at = head->head;
+	 struct memblock* previous = NULL;
 	 
-	 while (true) {
-		 if (looking_at->length > nbytes) {
-			 //split looking_at into allocation, and remainder
-			 //"free block" will take up the first part, and the allocation will take the second part
-			 //(so we don't have to modify pointers to the start of the free block!)
-			 // ulong new_length = looking_at->length - nbytes;
-			 looking_at->length -= nbytes;
-			 return ((void*)looking_at) + (looking_at->length);
-		 } else if (looking_at->length == nbytes) {
-			 //remove looking_at and return its address
-			 if (previous != NULL) {
-				 previous->next = looking_at->next;
-			 } else {
-				 head->head = looking_at->next;
-			 }
-			 looking_at->length = 0;
-			 looking_at->next = NULL;
-			 return (void*) looking_at;
-		 } else {
-			 previous = looking_at;
-			 looking_at = looking_at->next;
-		 }
-		 if (looking_at == NULL) {
-			 //looking at end of list :( do the backup thing
-			 return (void*) SYSERR;
-		 }
-	 }
+	 while (1) {
+		if (looking_at->length > nbytes) {
+			//we are going to take a chunk of memory out of looking_at
+			//specifically from the start
+			void* pointer_to_return = (void*) looking_at;
+			struct memblock* new_block = (struct memblock*)(((void*)looking_at) + nbytes);
+			new_block->length = looking_at->length - nbytes;
+			new_block->next = looking_at->next;
+			if (previous) {
+				previous->next = new_block;
+			} else {
+				head->head = new_block;
+			}
+			head->length -= nbytes;
+			return pointer_to_return;
+		} else if (looking_at->length == nbytes) {
+			//remove looking_at and return its address
+			if (previous != NULL) {
+				previous->next = looking_at->next;
+			} else {
+				head->head = looking_at->next;
+			}
+			looking_at->length = 0;
+			looking_at->next = NULL;
+			head->length -= nbytes;
+			return (void*) looking_at;
+		} else {
+			previous = looking_at;
+			looking_at = looking_at->next;
+		}
+		if (looking_at == NULL) {
+			//looking at end of list :( do the backup thing
+			
+			//TODO: call user_incheap
+			// problem: incheap and heapinit are currently giving warnings of implicit declaration
+			// so they're not   working
+			
+			return (void*) SYSERR;
+		}
+	}
 
     return (void *)SYSERR;
 }
