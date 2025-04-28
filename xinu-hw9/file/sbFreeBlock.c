@@ -58,6 +58,7 @@ devcall sbFreeBlock(struct superblock *psuper, int block)
 		}
 		
 		//Load block fbc_node from block number
+		//Turn this now-unused block, number `block`, into our new fbcnode
 		struct fbcnode* new_fbc = NULL; //TODO
 		if (new_fbc == NULL)  {
 			signal(psuper->sb_freelock);
