@@ -58,7 +58,7 @@ devcall sbFreeBlock(struct superblock *psuper, int block)
 		}
 		
 		//Load block fbc_node from block number
-		struct fbcnode* new_fbc = NULL; //SOMEHOW
+		struct fbcnode* new_fbc = NULL; //TODO
 		if (new_fbc == NULL)  {
 			signal(psuper->sb_freelock);
 			return SYSERR;

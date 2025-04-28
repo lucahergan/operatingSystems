@@ -28,7 +28,25 @@ devcall fileDelete(int fd) {
 	wait(supertab->sb_dirlock);
 	
 	struct filenode file = filetab[fd]; //Get filenode
+	
 	//Remove from master directory index...?
+	struct dirblock* master_directory = supertab[SUPERBLOCKNUM].sb_dirlst;
+	if (master_directory == NULL) {
+		printf("master_directory was null\n");
+		signal(supertab->sb_dirlock);
+		return SYSERR;
+	}
+	int i;
+	for (i = 0; i < DIRENTRIES; i++) { //find when file #i in master directory is our filenode file
+		if (&(master_directory->db_fnodes[i]) == &(file)) break;
+	}
+	if (i >= DIRENTRIES) {
+		printf("Never found file in master directory\n");
+		signal(supertab->sb_dirlock);
+		return SYSERR;
+	}
+	printf("master_directory file #%d was file\n", i);
+	master_directory->db_fnodes[i] = NULL;
 	
 	//Return block to free list, and error check
 	if (SYSERR == sbFreeBlock(&(supertab[SUPERBLOCKNUM]), file.fn_blocknum)) {
@@ -44,8 +62,6 @@ devcall fileDelete(int fd) {
 	file.fn_state = FILE_FREE;
 	
 	signal(supertab->sb_dirlock);
-	
-	//wait(sb_dirlock);
 	
     return OK;
 }
