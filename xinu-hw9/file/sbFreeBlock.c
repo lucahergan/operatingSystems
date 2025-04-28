@@ -20,13 +20,7 @@ devcall sbFreeBlock(struct superblock *psuper, int block)
     //  mutually exclusive access to the free list, and write
     //  the changed free list segment(s) back to disk.
 	
-	// Free block
-	
-	// Add to free list
-	// Check superblock locks to read and write
-	
 	wait(psuper->sb_freelock);
-	wait(psuper->sb_dirlock);
 	
 	//Get fbc
 	if (psuper == NULL) return SYSERR;
@@ -48,20 +42,29 @@ devcall sbFreeBlock(struct superblock *psuper, int block)
 		//Edit fbc's next pointer (swizzle!), copy to disk, then fix the version in RAM again
 		//Because we're at end of linked list, fbc->fbc_next is necesarilly NULL...So do we really have to swizzle...
 		seek(diskfd, fbc->fbc_blocknum);
-		if (SYSERR == write(diskfd, fbc, sizeof(struct fbcnode))) return SYSERR;
+		if (SYSERR == write(diskfd, fbc, sizeof(struct fbcnode))) {
+			signal(psuper->sb_freelock);
+			return SYSERR;
+		}
 		
 	} else {
 		//Need new fbc block... let's use the block itself!
 		//Set fbc to point to the block in disk. Swizzle
-		fbc->next = block;
+		fbc->fbc_next = block;
 		seek(diskfd, fbc->fbc_blocknum);
-		if (SYSERR == write(diskfd, fbc, sizeof(struct fbcnode))) return SYSERR;
+		if (SYSERR == write(diskfd, fbc, sizeof(struct fbcnode))) {
+			signal(psuper->sb_freelock);
+			return SYSERR;
+		}
 		
-		//Load block
+		//Load block fbc_node from block number
 		struct fbcnode* new_fbc = NULL; //SOMEHOW
-		if (new_fbc == NULL) return SYSERR;
-		fbc->next = new_fbc;
-		new_fbc->fbc_blocknum
+		if (new_fbc == NULL)  {
+			signal(psuper->sb_freelock);
+			return SYSERR;
+		}
+		fbc->fbc_next = new_fbc;
+		new_fbc->fbc_blocknum = block;
 		new_fbc->fbc_count = 0;
 		new_fbc->fbc_next = NULL;
 		int i;
@@ -71,11 +74,15 @@ devcall sbFreeBlock(struct superblock *psuper, int block)
 		fbc = new_fbc;
 		fbc->fbc_free[fbc->fbc_count++] = block;
 		seek(diskfd, fbc->fbc_blocknum);
-		if (SYSERR == write(diskfd, fbc, sizeof(struct fbcnode))) return SYSERR;
+		if (SYSERR == write(diskfd, fbc, sizeof(struct fbcnode))) {
+			signal(psuper->sb_freelock);
+			return SYSERR;
+		}
 	}
 	
-	signal(psuper->sb_dirlock);
 	signal(psuper->sb_freelock);
+	
+	return OK;
 	
     return SYSERR;
 }
