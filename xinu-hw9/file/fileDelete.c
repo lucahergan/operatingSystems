@@ -24,11 +24,11 @@ devcall fileDelete(int fd) {
     //  and return its space to the free disk block list.
     //  Use the superblock's locks to guarantee mutually exclusive
     //  access to the directory index.
-	printf("fileDelete run\n");
+	//printf("fileDelete run\n");
 	wait(supertab->sb_dirlock);
 	
 	struct filenode file = filetab[fd]; //Get filenode
-	printf("file has block # %d\n", file.fn_blocknum);
+	//printf("file has block # %d\n", file.fn_blocknum);
 	
 	//Remove from master directory index...?
 	struct dirblock* master_directory = supertab->sb_dirlst;
@@ -49,13 +49,13 @@ devcall fileDelete(int fd) {
 		signal(supertab->sb_dirlock);
 		return SYSERR;
 	}
-	printf("File found in master directory at index %d\n", i);
+	//printf("File found in master directory at index %d\n", i);
 	master_directory->db_fnodes[i].fn_state = FILE_FREE;
 	
 	// Make sure the disk agrees that this file is gone
 	seek(DISK0, supertab->sb_dirlst->db_blocknum);
 	if (SYSERR == write(DISK0, supertab->sb_dirlst, sizeof(struct dirblock))) {
-		printf("fileDelete write to disk failed\n");
+		//printf("fileDelete write to disk failed\n");
 		signal(supertab->sb_dirlock);
 		return SYSERR;
 	}

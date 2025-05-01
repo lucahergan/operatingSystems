@@ -26,10 +26,36 @@ devcall sbFreeBlock(struct superblock *psuper, int block)
 	if (psuper == NULL) return SYSERR;
 	if (psuper->sb_disk == NULL) return SYSERR;
 	struct fbcnode* fbc = psuper->sb_freelst;
-	if (fbc == NULL) return SYSERR;
 	struct dentry* phw = psuper->sb_disk;
 	if (phw == NULL) return SYSERR;
 	int diskfd = phw - devtab;
+	if (fbc == NULL) {
+		//No free list at all - turn block into the head
+		fbc = (struct fbcnode*) malloc(sizeof(struct fbcnode));
+		if (fbc == NULL)  {
+			signal(psuper->sb_freelock);
+			return SYSERR;
+		}
+		fbc->fbc_blocknum = block;
+		fbc->fbc_count = 0;
+		fbc->fbc_next = NULL;
+		int i;
+		for (i = 0; i < FREEBLOCKMAX; i++) fbc->fbc_free[i] = 0;
+		seek(diskfd, fbc->fbc_blocknum);
+		if (SYSERR == write(diskfd, fbc, sizeof(struct fbcnode))) {
+			signal(psuper->sb_freelock);
+			return SYSERR;
+		}
+		psuper->sb_freelst = (struct fbcnode*)block;
+		seek(diskfd, psuper->sb_blocknum);
+		if (SYSERR == write(diskfd, psuper, sizeof(struct superblock))) {
+			signal(psuper->sb_freelock);
+			return SYSERR;
+		}
+		psuper->sb_freelst = fbc;
+		signal(psuper->sb_freelock);
+		return OK;
+	}
 	
 	//Traverse to last fbc
 	while (fbc->fbc_next) {
@@ -37,10 +63,9 @@ devcall sbFreeBlock(struct superblock *psuper, int block)
 	}
 	
 	if (fbc->fbc_count < FREEBLOCKMAX) {
-		//Add this block number to the list
+		//Tail has room - just add it
 		fbc->fbc_free[fbc->fbc_count++] = block;
-		//Edit fbc's next pointer (swizzle!), copy to disk, then fix the version in RAM again
-		//Because we're at end of linked list, fbc->fbc_next is necesarilly NULL...So do we really have to swizzle...
+		//Commit changes to tail (no swizzle, next is NULL == 0)
 		seek(diskfd, fbc->fbc_blocknum);
 		if (SYSERR == write(diskfd, fbc, sizeof(struct fbcnode))) {
 			signal(psuper->sb_freelock);
@@ -48,18 +73,14 @@ devcall sbFreeBlock(struct superblock *psuper, int block)
 		}
 		
 	} else {
-		//Need new fbc block... let's use the block itself!
-		//Set fbc to point to the block in disk. Swizzle
-		fbc->fbc_next = block;
+		//Tail is full, make new_fbc out of the given block, and point fbc to it
+		fbc->fbc_next = (struct fbcnode*)block;
 		seek(diskfd, fbc->fbc_blocknum);
 		if (SYSERR == write(diskfd, fbc, sizeof(struct fbcnode))) {
 			signal(psuper->sb_freelock);
 			return SYSERR;
 		}
-		
-		//Load block fbc_node from block number
-		//Turn this now-unused block, number `block`, into our new fbcnode
-		struct fbcnode* new_fbc = NULL; //TODO
+		struct fbcnode* new_fbc = (struct fbcnode*) malloc(sizeof(struct fbcnode));
 		if (new_fbc == NULL)  {
 			signal(psuper->sb_freelock);
 			return SYSERR;
@@ -71,11 +92,9 @@ devcall sbFreeBlock(struct superblock *psuper, int block)
 		int i;
 		for (i = 0; i < FREEBLOCKMAX; i++) new_fbc->fbc_free[i] = 0;
 		
-		//Now do the same operation as above
-		fbc = new_fbc;
-		fbc->fbc_free[fbc->fbc_count++] = block;
-		seek(diskfd, fbc->fbc_blocknum);
-		if (SYSERR == write(diskfd, fbc, sizeof(struct fbcnode))) {
+		//Now write new_fbc to disk. fbc_next does not need swizzling
+		seek(diskfd, new_fbc->fbc_blocknum);
+		if (SYSERR == write(diskfd, new_fbc, sizeof(struct fbcnode))) {
 			signal(psuper->sb_freelock);
 			return SYSERR;
 		}
